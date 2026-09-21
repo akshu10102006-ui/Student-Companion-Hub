@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Companion Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Righteous&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   THEME TOKENS
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
+  --ease-out:    cubic-bezier(0.22,1,0.36,1);
+  --ease-in-out: cubic-bezier(0.65,0,0.35,1);
+}
+
+[data-theme="dark"] {
+  --bg:            #070b12;
+  --bg2:           #0c1120;
+  --bg3:           #111827;
+  --surface:       #141e2e;
+  --surface2:      #1a2540;
+  --border:        rgba(255,255,255,0.06);
+  --border-hi:     rgba(99,162,255,0.25);
+  --text:          #eef2ff;
+  --text2:         rgba(200,215,255,0.65);
+  --text3:         rgba(150,175,220,0.4);
+  --accent:        #4f8eff;
+  --accent2:       #9d6fff;
+  --accent3:       #30e8c0;
+  --glow:          rgba(79,142,255,0.22);
+  --card-shadow:   0 4px 32px rgba(0,0,0,0.55);
+  --float-shadow:  0 20px 64px rgba(0,0,0,0.65);
+  --star-op:       1;
+  /* Per-module */
+  --p-page:        #060c18;
+  --p-surface:     #0f1829;
+  --p-bubble:      #141f38;
+  --p-bdr:         rgba(79,142,255,0.12);
+  --st-page:       #090400;
+  --st-text:       #fff5ee;
+  --sk-page:       #130a1a;
+  --sk-surface:    #1e1028;
+  --sk-text:       #f0e0ff;
+  --sk-muted:      rgba(210,170,240,0.55);
+  --sk-chip-bg:    #281838;
+  --sk-chip-bdr:   rgba(190,120,230,0.25);
+  --sk-accent:     #d48af0;
+  --sk-sel:        #b460d8;
+}
+
+[data-theme="light"] {
+  --bg:            #f4f7ff;
+  --bg2:           #eaefff;
+  --bg3:           #ffffff;
+  --surface:       #ffffff;
+  --surface2:      #f8faff;
+  --border:        rgba(0,20,100,0.07);
+  --border-hi:     rgba(60,100,255,0.18);
+  --text:          #0d1a3a;
+  --text2:         rgba(30,60,120,0.68);
+  --text3:         rgba(80,110,180,0.45);
+  --accent:        #2563eb;
+  --accent2:       #7c3aed;
+  --accent3:       #059669;
+  --glow:          rgba(37,99,235,0.14);
+  --card-shadow:   0 2px 20px rgba(40,80,200,0.08);
+  --float-shadow:  0 12px 48px rgba(40,80,200,0.13);
+  --star-op:       0.18;
+  --p-page:        #eef2ff;
+  --p-surface:     #ffffff;
+  --p-bubble:      #e8eeff;
+  --p-bdr:         rgba(37,99,235,0.12);
+  --st-page:       #fff8f0;
+  --st-text:       #1a0c00;
+  --sk-page:       #fdf4ff;
+  --sk-surface:    #ffffff;
+  --sk-text:       #2d0a3a;
+  --sk-muted:      rgba(90,20,120,0.55);
+  --sk-chip-bg:    #f8eeff;
+  --sk-chip-bdr:   rgba(160,60,200,0.2);
+  --sk-accent:     #9020b8;
+  --sk-sel:        #a030c8;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  /* NO overflow:hidden — let body scroll naturally */
+  min-height: 100vh;
+  transition: background .45s var(--ease-out), color .45s var(--ease-out);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SPA PAGE SYSTEM
+═══════════════════════════════════════════════════════════════ */
+.page {
+  display: none;
+  min-height: 100vh;
+  width: 100%;
+  animation: pageIn .5s var(--ease-out) both;
+}
+.page.active { display: block; }
+.page.exiting { animation: pageOut .35s var(--ease-in-out) both; }
+
+/* Home page does NOT participate in display:none SPA — it scrolls */
+#home { display: block; }
+#home.hidden { display: none; }
+
+@keyframes pageIn  { from { opacity:0; transform:translateY(18px) scale(.985); } to { opacity:1; transform:none; } }
+@keyframes pageOut { from { opacity:1; } to { opacity:0; transform:translateY(-12px); } }
+
+/* ═══════════════════════════════════════════════════════════════
+   STARFIELD (decorative, pointer-none)
+═══════════════════════════════════════════════════════════════ */
+#starfield {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  opacity: var(--star-op);
+  transition: opacity .5s;
+}
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: twinkle var(--td,3s) ease-in-out infinite var(--tdd,0s);
+}
+@keyframes twinkle {
+  0%,100% { opacity:.12; transform:scale(1); }
+  50%      { opacity:.9;  transform:scale(1.7); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME SWITCHER — top-right fixed
+═══════════════════════════════════════════════════════════════ */
+#themeSwitcher {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 5px 6px;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(16px);
+  transition: background .4s, border .4s, box-shadow .4s;
+}
+.t-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 40px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .28s var(--ease-out);
+  white-space: nowrap;
+}
+.t-btn:hover { color: var(--text); background: var(--bg2); }
+.t-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  box-shadow: 0 4px 16px var(--glow);
+}
+.t-btn .t-icon { font-size: 1rem; line-height: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ████ HOMEPAGE — SCROLLABLE
+═══════════════════════════════════════════════════════════════ */
+#home {
+  position: relative;
+  overflow: visible; /* natural scroll */
+}
+
+/* --- Hero Section --- */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px 80px;
+  position: relative;
+  text-align: center;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: 40px;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+  animation: fadeUp .6s var(--ease-out) .1s both;
+}
+.hero-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2.6rem, 7vw, 5.2rem);
+  line-height: 1.05;
+  letter-spacing: -1.5px;
+  color: var(--text);
+  margin-bottom: 22px;
+  animation: fadeUp .6s var(--ease-out) .2s both;
+}
+.hero-title .grad {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 60%, var(--accent3) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: clamp(.95rem,2vw,1.2rem);
+  color: var(--text2);
+  max-width: 480px;
+  line-height: 1.75;
+  margin-bottom: 52px;
+  animation: fadeUp .6s var(--ease-out) .3s both;
+}
+/* Stats row */
+.hero-stats {
+  display: flex;
+  gap: 36px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 64px;
+  animation: fadeUp .6s var(--ease-out) .4s both;
+}
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-lbl { font-size: .72rem; color: var(--text3); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
+/* Scroll indicator */
+.scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text3);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  animation: fadeUp .6s var(--ease-out) .7s both;
+}
+.scroll-arrow {
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--border-hi);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  animation: bounceDown 1.8s ease-in-out infinite;
+}
+@keyframes bounceDown {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+
+/* --- Cards Section --- */
+.cards-section {
+  padding: 24px 24px 100px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-label {
+  text-align: center;
+  margin-bottom: 48px;
+}
+.section-label h2 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.8rem,3.5vw,2.6rem);
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.section-label p { color: var(--text2); font-size: .95rem; }
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px,1fr));
+  gap: 24px;
+}
+
+/* Module card */
+.mod-card {
+  border-radius: 26px;
+  padding: 36px 30px 30px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  transition: transform .38s var(--ease-spring), box-shadow .35s var(--ease-out), border-color .28s;
+}
+.mod-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity .35s;
+}
+.mod-card:hover { transform: translateY(-10px) scale(1.02); }
+.mod-card:hover::before { opacity: 1; }
+.mod-card:active { transform: scale(.97); }
+
+/* Personality card */
+.card-p::before { background: radial-gradient(ellipse at 25% 25%, rgba(79,142,255,.09),transparent 70%); }
+.card-p:hover { border-color: rgba(79,142,255,.4); box-shadow: 0 24px 64px rgba(79,142,255,.2); }
+.card-p .c-tag { background: rgba(79,142,255,.12); color: var(--accent); }
+.card-p .c-arrow { color: var(--accent); }
+/* Stress card */
+.card-s::before { background: radial-gradient(ellipse at 25% 25%, rgba(255,90,40,.08),transparent 70%); }
+.card-s:hover { border-color: rgba(255,90,40,.38); box-shadow: 0 24px 64px rgba(255,90,40,.18); }
+.card-s .c-tag { background: rgba(255,90,40,.1); color: #ff6030; }
+.card-s .c-arrow { color: #ff6030; }
+/* Skincare card */
+.card-sk::before { background: radial-gradient(ellipse at 25% 25%, rgba(190,90,230,.08),transparent 70%); }
+.card-sk:hover { border-color: rgba(190,90,230,.35); box-shadow: 0 24px 64px rgba(190,90,230,.18); }
+.card-sk .c-tag { background: rgba(190,90,230,.1); color: #c060e0; }
+.card-sk .c-arrow { color: #c060e0; }
+
+.c-icon-wrap {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 24px;
+  position: relative;
+}
+.c-icon-bg {
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  opacity: .14;
+}
+.card-p  .c-icon-bg { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+.card-s  .c-icon-bg { background: linear-gradient(135deg, #ff6030, #ff2060); }
+.card-sk .c-icon-bg { background: linear-gradient(135deg, #c060e0, #8030c8); }
+
+.c-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.c-desc {
+  font-size: .88rem;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.c-footer { display: flex; align-items: center; justify-content: space-between; }
+.c-tag {
+  padding: 5px 14px;
+  border-radius: 40px;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.c-arrow {
+  font-size: 1.3rem;
+  transition: transform .25s var(--ease-spring);
+}
+.mod-card:hover .c-arrow { transform: translateX(5px); }
+
+/* Footer divider */
+.home-footer {
+  text-align: center;
+  padding: 32px 24px 48px;
+  color: var(--text3);
+  font-size: .78rem;
+  border-top: 1px solid var(--border);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(22px); }
+  to   { opacity:1; transform:none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARED — BACK BUTTONS
+═══════════════════════════════════════════════════════════════ */
+.back-top {
+  position: fixed;
+  top: 18px;
+  left: 20px;
+  z-index: 1000;
+  padding: 9px 20px;
+  border-radius: 40px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: all .25s var(--ease-out);
+  box-shadow: var(--card-shadow);
+}
+.back-top:hover { transform: translateX(-4px); border-color: var(--border-hi); background: var(--bg2); }
+
+.back-bottom {
+  display: block;
+  margin: 36px auto 0;
+  padding: 16px 48px;
+  border-radius: 50px;
+  border: 2px solid var(--border-hi);
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: .3px;
+  transition: all .32s var(--ease-spring);
+  box-shadow: var(--card-shadow);
+}
+.back-bottom:hover { transform: translateY(-5px) scale(1.03); box-shadow: var(--float-shadow); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ████ PERSONALITY MODULE
+═══════════════════════════════════════════════════════════════ */
+#personality {
+  background: var(--p-page);
+  position: relative;
+}
+/* Grid-line atmosphere */
+#personality::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(79,142,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79,142,255,.04) 1px, transparent 1px);
+  background-size: 52px 52px;
+  z-index: 0;
+}
+
+.p-inner {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 90px 20px 60px;
+  position: relative;
+  z-index: 2;
+}
+.p-hdr {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.p-hdr h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.9rem,4vw,2.8rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.p-hdr p { color: var(--text2); font-size: .9rem; }
+
+.chat-shell {
+  width: 100%;
+  max-width: 640px;
+  background: var(--p-surface);
+  border: 1px solid var(--p-bdr);
+  border-radius: 28px;
+  padding: 28px 28px 24px;
+  box-shadow: 0 0 80px rgba(79,142,255,.07), var(--float-shadow);
+}
+
+/* Progress */
+.prog-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.prog-lbl { font-size: .68rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); }
+.prog-frac { font-size: .72rem; font-weight: 700; color: var(--accent); }
+.prog-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 50px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.prog-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 50px;
+  transition: width .55s var(--ease-out);
+}
+
+/* Chat messages */
+.chat-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 80px;
+  margin-bottom: 20px;
+}
+.bot-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  animation: msgPop .4s var(--ease-spring) both;
+}
+.bot-av {
+  width: 36px; height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px var(--glow);
+}
+.bot-bubble {
+  background: var(--p-bubble);
+  border: 1px solid var(--p-bdr);
+  border-radius: 4px 18px 18px 18px;
+  padding: 13px 16px;
+  font-size: .9rem;
+  line-height: 1.65;
+  color: var(--text);
+  max-width: 82%;
+}
+.user-row {
+  display: flex;
+  justify-content: flex-end;
+  animation: msgPop .35s var(--ease-spring) both;
+}
+.user-bubble {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 18px 4px 18px 18px;
+  padding: 12px 16px;
+  font-size: .88rem;
+  color: #fff;
+  max-width: 72%;
+  font-weight: 500;
+}
+/* Typing dots */
+.typing-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.t-dots {
+  background: var(--p-bubble);
+  border: 1px solid var(--p-bdr);
+  border-radius: 4px 18px 18px 18px;
+  padding: 13px 18px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.t-dots span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: block;
+  animation: tdot 1.3s ease-in-out infinite;
+}
+.t-dots span:nth-child(2) { animation-delay:.18s; background: var(--accent2); }
+.t-dots span:nth-child(3) { animation-delay:.36s; background: var(--accent3); }
+@keyframes tdot {
+  0%,60%,100% { transform:translateY(0); opacity:.45; }
+  30%          { transform:translateY(-7px); opacity:1; }
+}
+
+/* Options */
+.opts-wrap { display:flex; flex-wrap:wrap; gap:9px; }
+.opt {
+  padding: 10px 19px;
+  border-radius: 40px;
+  border: 1.5px solid var(--p-bdr);
+  background: transparent;
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .22s var(--ease-out);
+}
+.opt:hover {
+  border-color: var(--accent);
+  background: var(--glow);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+.opt:active { transform: scale(.95); }
+
+/* Result */
+.p-result { animation: msgPop .5s var(--ease-spring) both; }
+.res-hero { text-align: center; padding: 22px 0 18px; }
+.res-emoji {
+  font-size: 4.2rem;
+  display: block;
+  animation: floatY 3s ease-in-out infinite;
+}
+@keyframes floatY { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-9px); } }
+.res-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 900;
+  font-size: 1.85rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 12px;
+}
+.res-cards { display:flex; flex-direction:column; gap:12px; margin-top:18px; }
+.res-card {
+  border-radius: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+}
+[data-theme="light"] .res-card { background: var(--surface2); }
+.res-card-head {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 11px;
+}
+.res-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.res-card-head h4 {
+  font-size: .7rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 1.8px;
+  color: var(--text2);
+}
+.res-card ul { list-style:none; display:flex; flex-direction:column; gap:7px; }
+.res-card ul li {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: .86rem; color: var(--text2); line-height: 1.5;
+}
+.retry-btn {
+  width: 100%; margin-top: 18px; padding: 14px;
+  border-radius: 40px; border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: .95rem;
+  cursor: pointer;
+  transition: all .28s var(--ease-spring);
+  box-shadow: 0 6px 24px var(--glow);
+}
+.retry-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px var(--glow); }
+
+@keyframes msgPop {
+  from { opacity:0; transform:translateY(12px) scale(.94); }
+  to   { opacity:1; transform:none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ████ STRESS BUSTER MODULE
+═══════════════════════════════════════════════════════════════ */
+#stress { background: var(--st-page); transition: background .1s; }
+
+.st-inner {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 90px 20px 60px;
+  position: relative;
+  overflow: hidden;
+}
+/* Decorative orbs */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  animation: orbFloat var(--od,7s) ease-in-out infinite var(--odd,0s);
+}
+@keyframes orbFloat {
+  0%,100% { transform:translate(0,0) scale(1); }
+  50%      { transform:translate(var(--dx,20px),var(--dy,-20px)) scale(1.08); }
+}
+
+.st-hdr { text-align: center; margin-bottom: 44px; z-index: 2; position: relative; }
+.st-title {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(2.2rem,6vw,4.2rem);
+  color: var(--st-text);
+  text-shadow: 0 0 40px rgba(255,110,40,.55);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.st-sub { color: rgba(255,255,255,.55); font-size: 1rem; }
+[data-theme="light"] .st-sub { color: rgba(0,0,0,.48); }
+
+/* Tap arena */
+.tap-arena { position: relative; width: 220px; height: 220px; margin: 0 auto 44px; z-index: 2; }
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255,100,50,.35);
+  animation: ringPulse 1.6s ease-out infinite;
+}
+.ring.r1 { inset: -12px; animation-delay: 0s; }
+.ring.r2 { inset: -26px; animation-delay: .53s; }
+.ring.r3 { inset: -42px; animation-delay: 1.06s; }
+@keyframes ringPulse {
+  0%  { transform:scale(.88); opacity:.8; }
+  100%{ transform:scale(1.1);  opacity:0; }
+}
+#tapBtn {
+  position: absolute; inset: 0;
+  border-radius: 50%; border: none;
+  background: radial-gradient(circle at 36% 34%, #ff9060, #d42010);
+  box-shadow: 0 0 0 6px rgba(255,80,30,.18), 0 20px 60px rgba(255,50,10,.48), inset 0 -10px 24px rgba(0,0,0,.28);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer;
+  transition: transform .09s, box-shadow .09s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 3;
+}
+#tapBtn:active {
+  transform: scale(.9);
+  box-shadow: 0 0 0 3px rgba(255,80,30,.18), 0 6px 20px rgba(255,50,10,.35);
+}
+.tap-emoji { font-size: 2.6rem; pointer-events: none; }
+.tap-lbl {
+  font-family: 'Righteous', cursive;
+  font-size: .85rem; letter-spacing: 1px;
+  color: rgba(255,255,255,.9);
+  pointer-events: none;
+}
+
+.counter-area { text-align: center; margin-bottom: 22px; z-index: 2; position: relative; }
+.big-num {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(4rem,11vw,7.5rem);
+  color: var(--st-text);
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(255,110,40,.65);
+}
+.big-lbl { font-size: .7rem; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,.38); margin-top: 4px; }
+[data-theme="light"] .big-lbl { color: rgba(0,0,0,.35); }
+
+.fun-msg {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(1.1rem,3vw,1.65rem);
+  color: #ff9f43;
+  text-align: center;
+  min-height: 2rem;
+  margin-bottom: 30px;
+  z-index: 2;
+  position: relative;
+  animation: funIn .4s var(--ease-spring);
+}
+@keyframes funIn { from{transform:scale(.65);opacity:0;} to{transform:scale(1);opacity:1;} }
+
+.done-btn {
+  padding: 11px 28px;
+  border-radius: 40px;
+  border: 1.5px solid rgba(255,100,50,.38);
+  background: rgba(255,100,50,.1);
+  color: rgba(255,200,150,.9);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700; font-size: .88rem;
+  cursor: pointer;
+  transition: all .25s;
+  z-index: 2; position: relative;
+}
+[data-theme="light"] .done-btn { color: rgba(150,50,10,.85); border-color: rgba(200,80,30,.45); }
+.done-btn:hover { background: rgba(255,100,50,.22); transform: scale(1.04); }
+
+/* Particles */
+.ptc {
+  position: fixed;
+  pointer-events: none;
+  animation: ptcFly .9s ease-out forwards;
+  z-index: 9999;
+}
+@keyframes ptcFly {
+  from { opacity:1; transform:translate(0,0) scale(1) rotate(0deg); }
+  to   { opacity:0; transform:translate(var(--dx),var(--dy)) scale(.15) rotate(var(--rot,0deg)); }
+}
+
+/* Stress result */
+.st-result-wrap { width:100%; max-width:500px; z-index:2; position:relative; animation:msgPop .5s var(--ease-spring) both; }
+.st-result-card {
+  background: rgba(255,255,255,.07);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,100,50,.22);
+  border-radius: 28px;
+  padding: 36px 30px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(255,50,10,.2);
+}
+[data-theme="light"] .st-result-card {
+  background: rgba(255,255,255,.7);
+  border-color: rgba(200,70,20,.22);
+}
+.sr-emoji { font-size: 3.8rem; margin-bottom: 8px; }
+.sr-title { font-family:'Righteous',cursive; font-size:1.55rem; color:#ff9f43; margin-bottom:6px; }
+.sr-num   { font-family:'Righteous',cursive; font-size:5rem; color:var(--st-text); line-height:1; }
+.sr-unit  { font-size:.7rem; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,.4); margin-bottom:16px; }
+[data-theme="light"] .sr-unit { color:rgba(0,0,0,.38); }
+.sr-msg   { font-size:.92rem; line-height:1.65; color:var(--st-text); opacity:.82; }
+.reset-st {
+  width:100%; margin-top:18px; padding:14px;
+  border-radius:40px; border:none;
+  background:linear-gradient(135deg,#ff6030,#ff1860);
+  color:#fff;
+  font-family:'Righteous',cursive; font-size:1rem;
+  cursor:pointer;
+  transition:all .3s var(--ease-spring);
+  box-shadow:0 8px 28px rgba(255,50,20,.35);
+}
+.reset-st:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(255,50,20,.42); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ████ SKINCARE MODULE
+═══════════════════════════════════════════════════════════════ */
+#skincare { background: var(--sk-page); transition: background .45s; }
+
+.sk-inner {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 90px 20px 60px;
+}
+.sk-hdr { text-align: center; margin-bottom: 40px; }
+.sk-hdr h1 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2rem,4.5vw,3rem);
+  color: var(--sk-accent);
+  margin-bottom: 8px;
+}
+.sk-hdr p { color: var(--sk-muted); font-size: .92rem; }
+
+.sk-form { width:100%; max-width:700px; display:flex; flex-direction:column; gap:20px; }
+.sk-section {
+  background: var(--sk-surface);
+  border-radius: 22px; padding: 24px;
+  border: 1px solid var(--sk-chip-bdr);
+  box-shadow: var(--card-shadow);
+  transition: background .45s, border .45s;
+}
+.sk-section h3 {
+  font-size: .68rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 2.5px;
+  color: var(--sk-accent); margin-bottom: 16px;
+}
+.chips-row { display:flex; flex-wrap:wrap; gap:10px; }
+.chip {
+  padding: 10px 20px;
+  border-radius: 40px;
+  border: 1.5px solid var(--sk-chip-bdr);
+  background: var(--sk-chip-bg);
+  color: var(--sk-text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .86rem; font-weight: 600;
+  cursor: pointer;
+  transition: all .22s var(--ease-out);
+  user-select: none;
+}
+.chip:hover { border-color: var(--sk-sel); transform: translateY(-2px); }
+.chip.on {
+  background: var(--sk-sel);
+  border-color: var(--sk-sel);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(180,80,220,.28);
+}
+.gen-btn {
+  width: 100%; padding: 18px;
+  border-radius: 40px; border: none;
+  background: linear-gradient(135deg, var(--sk-accent), #7020a0);
+  color: #fff;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem;
+  cursor: pointer; letter-spacing: .4px;
+  transition: all .32s var(--ease-spring);
+  box-shadow: 0 8px 30px rgba(170,60,210,.28);
+}
+.gen-btn:hover { transform:translateY(-5px); box-shadow:0 18px 48px rgba(170,60,210,.38); }
+.gen-btn:active { transform:scale(.97); }
+
+/* Routine output cards */
+.sk-results {
+  width:100%; max-width:700px;
+  display:flex; flex-direction:column; gap:18px;
+  animation: msgPop .5s var(--ease-spring) both;
+}
+.rout-card {
+  background: var(--sk-surface);
+  border-radius: 22px; padding: 24px;
+  border: 1px solid var(--sk-chip-bdr);
+  box-shadow: var(--card-shadow);
+}
+.rout-head { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.rout-ico {
+  width:48px; height:48px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.4rem; flex-shrink:0;
+}
+.ico-morning { background:linear-gradient(135deg,#ffd86e,#ff9f43); }
+.ico-night   { background:linear-gradient(135deg,#c084f5,#8020b0); }
+.ico-natural { background:linear-gradient(135deg,#86efac,#16a34a); }
+.ico-lip     { background:linear-gradient(135deg,#f9a8d4,#db2777); }
+.rout-title { font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem; color:var(--sk-text); }
+.rout-sub { font-size:.75rem; color:var(--sk-muted); margin-top:2px; }
+.rout-card ul { list-style:none; display:flex; flex-direction:column; gap:10px; }
+.rout-card ul li {
+  display:flex; align-items:flex-start; gap:11px;
+  font-size:.86rem; color:var(--sk-text); line-height:1.55; opacity:.9;
+}
+.step-num {
+  width:24px; height:24px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.68rem; font-weight:800; color:#fff;
+  flex-shrink:0; margin-top:1px;
+}
+.sn-morning { background:#d97706; }
+.sn-night   { background:#7c3aed; }
+.sn-natural { background:#16a34a; }
+.sn-lip     { background:#be185d; }
+
+.reset-sk {
+  width:100%; max-width:700px; padding:14px;
+  border-radius:40px;
+  border:1.5px solid var(--sk-chip-bdr);
+  background:transparent;
+  color:var(--sk-accent);
+  font-family:'Syne',sans-serif; font-weight:800; font-size:.92rem;
+  cursor:pointer;
+  transition:all .25s;
+  margin-top:4px;
+}
+.reset-sk:hover { background:var(--sk-chip-bg); transform:scale(1.02); }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════════ */
+@media(max-width:600px) {
+  .cards-grid { grid-template-columns:1fr; }
+  .tap-arena  { width:175px; height:175px; }
+  .hero-stats { gap:22px; }
+  #themeSwitcher { top:12px; right:12px; }
+  .t-btn { padding:7px 12px; font-size:.75rem; }
+  .t-btn .t-label { display:none; }
+}
+@media(max-width:380px) {
+  .t-btn .t-label { display:none; }
+}
+
+/* shake anim reused */
+@keyframes btnShake {
+  0%,100%{ transform:scale(1) rotate(0); }
+  25%     { transform:scale(1.07) rotate(-4deg); }
+  75%     { transform:scale(1.07) rotate(4deg); }
+}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- ══════════════════════════════════════════════════
+     STARFIELD (always present, behind everything)
+══════════════════════════════════════════════════ -->
+<div id="starfield"></div>
+
+<!-- ══════════════════════════════════════════════════
+     THEME SWITCHER — fixed top-right
+══════════════════════════════════════════════════ -->
+<div id="themeSwitcher">
+  <button class="t-btn active" id="btnDark" onclick="setTheme('dark')">
+    <span class="t-icon">🌙</span>
+    <span class="t-label">Dark</span>
+  </button>
+  <button class="t-btn" id="btnLight" onclick="setTheme('light')">
+    <span class="t-icon">☀️</span>
+    <span class="t-label">Light</span>
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ████  HOMEPAGE
+══════════════════════════════════════════════════ -->
+<div id="home">
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="hero-eyebrow">✦ Your Personal Student Space</div>
+
+    <h1 class="hero-title">
+      Student<br>
+      <span class="grad">Companion Hub</span>
+    </h1>
+
+    <p class="hero-sub">
+      One place to discover your personality, smash your stress,
+      and build a skincare routine made just for you. 🌟
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat-pill">
+        <span class="stat-num">3</span>
+        <span class="stat-lbl">Modules</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-num">100%</span>
+        <span class="stat-lbl">Free</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-num">∞</span>
+        <span class="stat-lbl">Fun</span>
+      </div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint">
+      <span>Scroll to explore</span>
+      <div class="scroll-arrow">↓</div>
+    </div>
+  </section>
+
+  <!-- CARDS SECTION (scrolled into view) -->
+  <section class="cards-section">
+    <div class="section-label">
+      <h2>Choose Your Experience</h2>
+      <p>Click any card below to dive straight in!</p>
+    </div>
+
+    <div class="cards-grid">
+
+      <!-- Personality -->
+      <div class="mod-card card-p" onclick="goTo('personality')">
+        <div class="c-icon-wrap">
+          <div class="c-icon-bg"></div>
+          🧠
+        </div>
+        <div class="c-title">Discover Yourself</div>
+        <div class="c-desc">
+          Answer fun, relatable questions one by one and find out
+          which personality type makes you uniquely awesome!
+        </div>
+        <div class="c-footer">
+          <span class="c-tag">Personality Checker</span>
+          <span class="c-arrow">→</span>
+        </div>
+      </div>
+
+      <!-- Stress -->
+      <div class="mod-card card-s" onclick="goTo('stress')">
+        <div class="c-icon-wrap">
+          <div class="c-icon-bg"></div>
+          💥
+        </div>
+        <div class="c-title">Release Stress</div>
+        <div class="c-desc">
+          Tap the big red button until you feel better.
+          No judgment. No limits. Just pure satisfying release!
+        </div>
+        <div class="c-footer">
+          <span class="c-tag">Stress Buster</span>
+          <span class="c-arrow">→</span>
+        </div>
+      </div>
+
+      <!-- Skincare -->
+      <div class="mod-card card-sk" onclick="goTo('skincare')">
+        <div class="c-icon-wrap">
+          <div class="c-icon-bg"></div>
+          ✨
+        </div>
+        <div class="c-title">Care Yourself</div>
+        <div class="c-desc">
+          Tell us about your skin and we'll build a personalised
+          morning, night, natural remedy &amp; lipcare routine!
+        </div>
+        <div class="c-footer">
+          <span class="c-tag">Skincare Advisor</span>
+          <span class="c-arrow">→</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="home-footer">
+    Made with ❤️ for students everywhere &nbsp;·&nbsp; Student Companion Hub
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ████  PERSONALITY PAGE
+══════════════════════════════════════════════════ -->
+<div id="personality" class="page">
+  <button class="back-top" onclick="goTo('home')">← Back</button>
+
+  <div class="p-inner">
+    <div class="p-hdr">
+      <h1>🧠 What's Your Personality?</h1>
+      <p>Simple questions. Big discoveries. Let's find out what makes you amazing!</p>
+    </div>
+
+    <div class="chat-shell">
+      <div class="prog-row">
+        <span class="prog-lbl">Your Journey</span>
+        <span class="prog-frac" id="progFrac">0 / 6</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-bar" id="progBar" style="width:0%"></div>
+      </div>
+      <div class="chat-feed" id="chatFeed"></div>
+      <div class="opts-wrap" id="optsWrap"></div>
+      <div id="pRes" style="display:none" class="p-result"></div>
+    </div>
+
+    <button class="back-bottom" id="pBotBtn" style="display:none" onclick="goTo('home')">
+      🏠 Back to Home
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ████  STRESS PAGE
+══════════════════════════════════════════════════ -->
+<div id="stress" class="page">
+  <button class="back-top" onclick="goTo('home')">← Back</button>
+
+  <!-- Decorative orbs -->
+  <div class="orb" style="width:320px;height:320px;background:rgba(255,70,20,.15);top:-90px;right:-80px;--od:7s;--dx:30px;--dy:-20px;"></div>
+  <div class="orb" style="width:200px;height:200px;background:rgba(255,180,30,.1);bottom:-50px;left:-40px;--od:9s;--odd:4s;--dx:-20px;--dy:15px;"></div>
+
+  <!-- MAIN TAPPING UI -->
+  <div class="st-inner" id="stMain">
+    <div class="st-hdr">
+      <div class="st-title">💥 Stress Buster!</div>
+      <div class="st-sub">Tap like there's no tomorrow — let it ALL out! 🤜</div>
+    </div>
+
+    <div class="tap-arena">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <button id="tapBtn" onclick="handleTap(event)">
+        <span class="tap-emoji" id="tapEmoji">😤</span>
+        <span class="tap-lbl">TAP ME!</span>
+      </button>
+    </div>
+
+    <div class="counter-area">
+      <div class="big-num" id="bigNum">0</div>
+      <div class="big-lbl">TAPS</div>
+    </div>
+
+    <div class="fun-msg" id="funMsg">Ready? Start tapping! 👊</div>
+    <button class="done-btn" onclick="showStressResult()">I'm done — show my results →</button>
+  </div>
+
+  <!-- RESULT UI -->
+  <div class="st-inner" id="stResult" style="display:none">
+    <div class="st-result-wrap">
+      <div class="st-result-card">
+        <div class="sr-emoji" id="srEmoji">🎉</div>
+        <div class="sr-title">What a release!</div>
+        <div class="sr-num" id="srNum">0</div>
+        <div class="sr-unit">TOTAL TAPS</div>
+        <div class="sr-msg" id="srMsg"></div>
+      </div>
+      <button class="reset-st" onclick="resetStress()">🔄 Tap Again</button>
+    </div>
+    <button class="back-bottom" style="margin-top:24px;" onclick="goTo('home')">🏠 Back to Home</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ████  SKINCARE PAGE
+══════════════════════════════════════════════════ -->
+<div id="skincare" class="page">
+  <button class="back-top" onclick="goTo('home')">← Back</button>
+
+  <div class="sk-inner">
+    <div class="sk-hdr">
+      <h1>✨ Skincare Advisor</h1>
+      <p>Tell us about your skin — we'll craft your perfect daily routine! 🌸</p>
+    </div>
+
+    <!-- FORM -->
+    <div class="sk-form" id="skForm">
+      <div class="sk-section">
+        <h3>🧴 Your Skin Type</h3>
+        <div class="chips-row" id="stChips">
+          <div class="chip" data-group="skinType" data-val="oily"        onclick="pickChip(this,true)">💧 Oily</div>
+          <div class="chip" data-group="skinType" data-val="dry"         onclick="pickChip(this,true)">🏜️ Dry</div>
+          <div class="chip" data-group="skinType" data-val="combination" onclick="pickChip(this,true)">⚖️ Combination</div>
+          <div class="chip" data-group="skinType" data-val="sensitive"   onclick="pickChip(this,true)">🌸 Sensitive</div>
+          <div class="chip" data-group="skinType" data-val="normal"      onclick="pickChip(this,true)">😊 Normal</div>
+        </div>
+      </div>
+
+      <div class="sk-section">
+        <h3>😟 Skin Concerns (pick all that apply)</h3>
+        <div class="chips-row">
+          <div class="chip" data-group="probs" data-val="acne"      onclick="pickChip(this,false)">🔴 Acne</div>
+          <div class="chip" data-group="probs" data-val="dull"      onclick="pickChip(this,false)">😐 Dull Skin</div>
+          <div class="chip" data-group="probs" data-val="tan"       onclick="pickChip(this,false)">☀️ Tan</div>
+          <div class="chip" data-group="probs" data-val="darkspots" onclick="pickChip(this,false)">🌑 Dark Spots</div>
+          <div class="chip" data-group="probs" data-val="pores"     onclick="pickChip(this,false)">🔍 Large Pores</div>
+          <div class="chip" data-group="probs" data-val="dryness"   onclick="pickChip(this,false)">💧 Dryness/Flaking</div>
+          <div class="chip" data-group="probs" data-val="none"      onclick="pickChip(this,false)">✅ None — I'm good!</div>
+        </div>
+      </div>
+
+      <div class="sk-section">
+        <h3>💧 Daily Water Intake</h3>
+        <div class="chips-row">
+          <div class="chip" data-group="water" data-val="low"    onclick="pickChip(this,true)">🥤 Not much (&lt;4 glasses)</div>
+          <div class="chip" data-group="water" data-val="medium" onclick="pickChip(this,true)">💧 Some (4-6 glasses)</div>
+          <div class="chip" data-group="water" data-val="high"   onclick="pickChip(this,true)">🌊 Lots! (8+ glasses)</div>
+        </div>
+      </div>
+
+      <div class="sk-section">
+        <h3>😴 Sleep Quality</h3>
+        <div class="chips-row">
+          <div class="chip" data-group="sleep" data-val="good" onclick="pickChip(this,true)">😴 I sleep well (7-8h)</div>
+          <div class="chip" data-group="sleep" data-val="okay" onclick="pickChip(this,true)">🙂 It's okay (5-6h)</div>
+          <div class="chip" data-group="sleep" data-val="poor" onclick="pickChip(this,true)">😩 Very less (&lt;5h)</div>
+        </div>
+      </div>
+
+      <button class="gen-btn" onclick="buildRoutine()">✨ Create My Personal Routine!</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="sk-results" id="skResults" style="display:none"></div>
+    <button class="reset-sk" id="skResetBtn" style="display:none" onclick="resetSkin()">🔄 Start Over</button>
+    <button class="back-bottom" id="skBotBtn" style="display:none" onclick="goTo('home')">🏠 Back to Home</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+/* ─── STARFIELD ─────────────────────────────────── */
+(function(){
+  const sf = document.getElementById('starfield');
+  for(let i=0;i<100;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random()*2.5+.5;
+    s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--td:${2+Math.random()*3.5}s;--tdd:${Math.random()*4}s`;
+    sf.appendChild(s);
+  }
+})();
+
+/* ─── THEME ──────────────────────────────────────── */
+let theme = localStorage.getItem('sch3_theme') || 'dark';
+
+function setTheme(t) {
+  theme = t;
+  localStorage.setItem('sch3_theme', t);
+  document.body.setAttribute('data-theme', t);
+  document.getElementById('btnDark').classList.toggle('active', t==='dark');
+  document.getElementById('btnLight').classList.toggle('active', t==='light');
+  document.getElementById('starfield').style.opacity = t==='dark'?'1':'0.18';
+}
+setTheme(theme); // run on load
+
+/* ─── SPA NAVIGATION ────────────────────────────── */
+let current = 'home';
+
+function goTo(id) {
+  if(id === current) return;
+
+  // Hide current
+  const curEl = document.getElementById(current);
+  if(current === 'home') {
+    curEl.classList.add('hidden');
+  } else {
+    curEl.classList.add('exiting');
+    setTimeout(()=>{ curEl.classList.remove('active','exiting'); }, 320);
+  }
+
+  // Show next
+  setTimeout(()=>{
+    if(id === 'home') {
+      document.getElementById('home').classList.remove('hidden');
+      window.scrollTo({ top:0, behavior:'smooth' });
+    } else {
+      const nxt = document.getElementById(id);
+      nxt.classList.add('active');
+      window.scrollTo(0,0);
+      if(id==='personality') initPersonality();
+      if(id==='stress')      initStress();
+    }
+    current = id;
+  }, current==='home' ? 50 : 280);
+}
+
+/* ─── PERSONALITY ───────────────────────────────── */
+const QUESTIONS = [
+  {
+    q: "When you have free time, what do you enjoy most?",
+    opts: ["🎨 Creating art, writing or music", "⚽ Playing sports or active games", "📚 Reading, thinking or researching", "💬 Chatting with friends or socialising"]
+  },
+  {
+    q: "Your friend is having a bad day. What do you do?",
+    opts: ["🤗 Listen and give them a big hug", "💡 Offer clever tips or solutions", "😂 Crack jokes to cheer them up", "🤐 Give them space and check later"]
+  },
+  {
+    q: "A new challenge lands in your lap. How do you react?",
+    opts: ["🚀 Jump in! I'll figure it out.", "🗺️ Plan carefully before starting", "😬 Feel nervous, but try anyway", "🤝 Ask others for help first"]
+  },
+  {
+    q: "In a group project, which role fits you best?",
+    opts: ["📋 The planner who organises everything", "🌟 The idea person with creative concepts", "🔧 The one who quietly gets things done", "🤝 The one who keeps everyone happy"]
+  },
+  {
+    q: "Which of these sounds most like a dream day?",
+    opts: ["🎭 Performing, presenting or leading", "🏕️ Exploring nature or a new place", "🏠 A cosy day reading or creating alone", "🎉 A fun day hanging out with friends"]
+  },
+  {
+    q: "Which word feels most like YOU?",
+    opts: ["⚡ Energetic & driven", "🌈 Creative & imaginative", "🌙 Calm & thoughtful", "❤️ Warm & caring"]
+  }
+];
+
+const TYPES = {
+  "Bold Leader ⚡": {
+    strengths: ["You're confident and decisive","People naturally look to you for guidance","You get things done — no excuses!","You're brilliant at organising and planning"],
+    grow: ["Try listening more before deciding","Patience truly is a superpower","It's okay to be wrong sometimes — it's how we learn"],
+    activities: ["Student council or class rep","Team captain","Public speaking & debate","Event organising"]
+  },
+  "Creative Mind 🎨": {
+    strengths: ["Your imagination is boundless","You see beauty and possibilities others miss","You bring fresh, original ideas","You express yourself in unique and meaningful ways"],
+    grow: ["Try finishing projects you start","Sharing your ideas out loud can inspire others","Working in a team can unlock new creativity too"],
+    activities: ["Art, craft & design","Creative writing or journaling","Music, dance or drama","Science experiments & invention"]
+  },
+  "Friendly Helper 😊": {
+    strengths: ["You genuinely care about people","You're a brilliant and patient listener","Friends always feel safe and understood around you","You bring warmth to every group"],
+    grow: ["Remember to take care of your own needs too","It's okay to say no sometimes","Speak up about your own feelings more often"],
+    activities: ["Volunteering & community projects","Peer support or counselling","Team sports","Drama or collaborative art"]
+  },
+  "Quiet Thinker 📚": {
+    strengths: ["You think deeply before you act","You learn and absorb information quickly","You're incredibly focused and self-reliant","You often see what others overlook"],
+    grow: ["Try joining group activities more often","Speaking up more will help others benefit from your ideas","Asking for help is a true sign of strength"],
+    activities: ["Reading clubs & book reviews","Coding, chess or logic puzzles","Nature journaling or photography","Science & research projects"]
+  }
+};
+
+let answers=[], qIdx=0;
+
+function initPersonality() {
+  answers=[]; qIdx=0;
+  document.getElementById('chatFeed').innerHTML='';
+  document.getElementById('optsWrap').innerHTML='';
+  document.getElementById('optsWrap').style.display='flex';
+  document.getElementById('pRes').style.display='none';
+  document.getElementById('pBotBtn').style.display='none';
+  updateProg();
+  setTimeout(()=>showQ(0), 400);
+}
+
+function updateProg() {
+  const pct = (qIdx/QUESTIONS.length)*100;
+  document.getElementById('progBar').style.width = pct+'%';
+  document.getElementById('progFrac').textContent = qIdx>=QUESTIONS.length ? 'Done! 🎉' : `${qIdx} / ${QUESTIONS.length}`;
+}
+
+function addBotBubble(html) {
+  const feed = document.getElementById('chatFeed');
+  const r = document.createElement('div');
+  r.className = 'bot-row';
+  r.innerHTML = `<div class="bot-av">🤖</div><div class="bot-bubble">${html}</div>`;
+  feed.appendChild(r);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function showTyping(cb) {
+  const feed = document.getElementById('chatFeed');
+  const r = document.createElement('div');
+  r.className = 'typing-wrap';
+  r.id = 'typingRow';
+  r.innerHTML = `<div class="bot-av">🤖</div><div class="t-dots"><span></span><span></span><span></span></div>`;
+  feed.appendChild(r);
+  feed.scrollTop = feed.scrollHeight;
+  setTimeout(()=>{ document.getElementById('typingRow')?.remove(); cb(); }, 1000);
+}
+
+function showQ(i) {
+  if(i >= QUESTIONS.length) { showPResult(); return; }
+  showTyping(()=>{
+    addBotBubble(QUESTIONS[i].q);
+    const wrap = document.getElementById('optsWrap');
+    wrap.innerHTML = '';
+    QUESTIONS[i].opts.forEach((o,idx)=>{
+      const b = document.createElement('button');
+      b.className = 'opt';
+      b.textContent = o;
+      b.onclick = ()=> pickAnswer(o, i);
+      setTimeout(()=> wrap.appendChild(b), idx*60);
+    });
+  });
+}
+
+function pickAnswer(ans, i) {
+  answers.push(ans);
+  document.getElementById('optsWrap').innerHTML = '';
+  const feed = document.getElementById('chatFeed');
+  const r = document.createElement('div');
+  r.className = 'user-row';
+  r.innerHTML = `<div class="user-bubble">${ans}</div>`;
+  feed.appendChild(r);
+  feed.scrollTop = feed.scrollHeight;
+  qIdx = i+1;
+  updateProg();
+  setTimeout(()=> showQ(qIdx), 520);
+}
+
+function showPResult() {
+  document.getElementById('optsWrap').style.display = 'none';
+  // Score
+  const a = answers;
+  const sc = { "Bold Leader ⚡":0, "Creative Mind 🎨":0, "Friendly Helper 😊":0, "Quiet Thinker 📚":0 };
+  const add = (type,pts)=> sc[type] = (sc[type]||0)+pts;
+
+  if(a[0]?.includes('sport')||a[0]?.includes('active')) add("Bold Leader ⚡",2);
+  if(a[0]?.includes('art')||a[0]?.includes('music'))    add("Creative Mind 🎨",2);
+  if(a[0]?.includes('Read')||a[0]?.includes('think'))   add("Quiet Thinker 📚",2);
+  if(a[0]?.includes('Chat')||a[0]?.includes('social'))  add("Friendly Helper 😊",2);
+
+  if(a[1]?.includes('Listen')||a[1]?.includes('hug'))   add("Friendly Helper 😊",2);
+  if(a[1]?.includes('tips')||a[1]?.includes('clever'))  add("Quiet Thinker 📚",1);
+  if(a[1]?.includes('jokes'))                            add("Friendly Helper 😊",1);
+  if(a[1]?.includes('space'))                            add("Quiet Thinker 📚",2);
+
+  if(a[2]?.includes('Jump'))                             add("Bold Leader ⚡",2);
+  if(a[2]?.includes('Plan'))                             add("Quiet Thinker 📚",2);
+  if(a[2]?.includes('nervous'))                          add("Friendly Helper 😊",1);
+  if(a[2]?.includes('others'))                           add("Friendly Helper 😊",1);
+
+  if(a[3]?.includes('planner')||a[3]?.includes('organ')) add("Bold Leader ⚡",2);
+  if(a[3]?.includes('idea')||a[3]?.includes('creat'))    add("Creative Mind 🎨",2);
+  if(a[3]?.includes('quietly'))                           add("Quiet Thinker 📚",2);
+  if(a[3]?.includes('happy'))                             add("Friendly Helper 😊",2);
+
+  if(a[4]?.includes('Perform')||a[4]?.includes('lead'))  add("Bold Leader ⚡",2);
+  if(a[4]?.includes('Explor')||a[4]?.includes('nature')) add("Creative Mind 🎨",1);
+  if(a[4]?.includes('read')||a[4]?.includes('alone'))    add("Quiet Thinker 📚",2);
+  if(a[4]?.includes('friends'))                           add("Friendly Helper 😊",2);
+
+  if(a[5]?.includes('Energetic'))  add("Bold Leader ⚡",2);
+  if(a[5]?.includes('Creative'))   add("Creative Mind 🎨",2);
+  if(a[5]?.includes('Calm'))       add("Quiet Thinker 📚",2);
+  if(a[5]?.includes('Warm'))       add("Friendly Helper 😊",2);
+
+  // Small random variance so same answers feel fresh
+  Object.keys(sc).forEach(k=> sc[k] += Math.random()*.6);
+
+  const winner = Object.entries(sc).sort((a,b)=>b[1]-a[1])[0][0];
+  const d = TYPES[winner];
+  const emoji = winner.split(' ').pop();
+  const name  = winner.split(' ').slice(0,-1).join(' ');
+
+  showTyping(()=>{
+    addBotBubble(`I've figured it out! You're a <strong>${winner}</strong> — here's what makes you incredible 👇`);
+
+    const dotColors = ['#22c55e','#f59e0b','var(--accent)'];
+    const heads = ['💪 Your Strengths','🌱 Areas to Grow','🎯 Great Activities for You'];
+
+    const res = document.getElementById('pRes');
+    res.style.display = 'block';
+    res.innerHTML = `
+      <div class="res-hero">
+        <span class="res-emoji">${emoji}</span>
+        <div class="res-name">${name}</div>
+      </div>
+      <div class="res-cards">
+        ${[d.strengths, d.grow, d.activities].map((arr,i)=>`
+          <div class="res-card">
+            <div class="res-card-head">
+              <div class="res-dot" style="background:${dotColors[i]};box-shadow:0 0 8px ${dotColors[i]}66"></div>
+              <h4>${heads[i]}</h4>
+            </div>
+            <ul>${arr.map(s=>`<li><span>✦</span><span>${s}</span></li>`).join('')}</ul>
+          </div>
+        `).join('')}
+      </div>
+      <button class="retry-btn" onclick="initPersonality()">🔄 Try Again</button>
+    `;
+    document.getElementById('pBotBtn').style.display = 'block';
+    setTimeout(()=> document.getElementById('pBotBtn').scrollIntoView({behavior:'smooth',block:'center'}), 350);
+  });
+}
+
+/* ─── STRESS BUSTER ────────────────────────────── */
+let taps = 0, bgStep = 0;
+const DARK_BGS  = ['#090400','#0c0200','#0a0600','#07050a','#0a0300','#030a04','#040a08'];
+const LIGHT_BGS = ['#fff8f0','#fff5e8','#fffaee','#fff0f5','#f8fff0','#f0faff','#fff0ee'];
+const FUN = [
+  [0,  "Ready? Start tapping! 👊"],
+  [1,  "Yes! Let it out! 😤"],
+  [10, "Keep going!! 💥"],
+  [25, "You're ON FIRE! 🔥"],
+  [50, "UNSTOPPABLE!! ⚡"],
+  [80, "Are you even tired?! 💀"],
+  [120,"LEGENDARY TAPPER!! 🏆"],
+  [180,"YOU BROKE THE MATRIX!! 👽"],
+  [250,"ARE YOU EVEN HUMAN?! 🤖"]
+];
+
+function initStress() {
+  taps = 0; bgStep = 0;
+  document.getElementById('bigNum').textContent = '0';
+  document.getElementById('funMsg').textContent  = "Ready? Start tapping! 👊";
+  document.getElementById('tapEmoji').textContent = '😤';
+  document.getElementById('stMain').style.display   = 'flex';
+  document.getElementById('stResult').style.display = 'none';
+  const bgs = theme==='dark' ? DARK_BGS : LIGHT_BGS;
+  document.getElementById('stress').style.background = bgs[0];
+}
+
+function handleTap(e) {
+  taps++;
+  const numEl = document.getElementById('bigNum');
+  numEl.textContent = taps;
+  numEl.style.animation = 'none'; void numEl.offsetWidth;
+  numEl.style.animation = 'funIn .12s var(--ease-spring)';
+
+  // BG
+  if(taps % 8 === 0) {
+    bgStep = (bgStep+1) % DARK_BGS.length;
+    const bgs = theme==='dark' ? DARK_BGS : LIGHT_BGS;
+    document.getElementById('stress').style.background = bgs[bgStep];
+  }
+
+  // Fun message
+  const msg = FUN.filter(m=>taps>=m[0]).pop();
+  const mEl = document.getElementById('funMsg');
+  if(mEl.textContent !== msg[1]) {
+    mEl.textContent = msg[1];
+    mEl.style.animation = 'none'; void mEl.offsetWidth;
+    mEl.style.animation = 'funIn .4s var(--ease-spring)';
+  }
+
+  // Emoji escalation
+  const em = document.getElementById('tapEmoji');
+  if(taps>=250)      em.textContent = '👑';
+  else if(taps>=120) em.textContent = '🤖';
+  else if(taps>=80)  em.textContent = '🔥';
+  else if(taps>=50)  em.textContent = '💀';
+  else if(taps>=25)  em.textContent = '😡';
+  else               em.textContent = '😤';
+
+  // Button shake
+  const btn = document.getElementById('tapBtn');
+  btn.style.animation='none'; void btn.offsetWidth;
+  btn.style.animation = 'btnShake .28s ease';
+
+  // Particles
+  spawnParticles(e.clientX||window.innerWidth/2, e.clientY||window.innerHeight/2);
+}
+
+function spawnParticles(x,y) {
+  const cols = ['#ff6030','#ff9f43','#ffd32a','#ff4757','#48dbfb','#ff9ff4'];
+  const shapes = ['50%','8px','4px'];
+  for(let i=0;i<10;i++) {
+    const p = document.createElement('div');
+    p.className = 'ptc';
+    const sz = Math.random()*11+5;
+    const a  = Math.random()*Math.PI*2;
+    const d  = Math.random()*100+55;
+    const br = shapes[Math.floor(Math.random()*shapes.length)];
+    const rot= Math.floor(Math.random()*360)+'deg';
+    p.style.cssText = `width:${sz}px;height:${sz}px;border-radius:${br};left:${x-sz/2}px;top:${y-sz/2}px;background:${cols[Math.floor(Math.random()*cols.length)]};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px;--rot:${rot}`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 950);
+  }
+}
+
+function showStressResult() {
+  if(taps===0) {
+    const m = document.getElementById('funMsg');
+    m.textContent = 'Tap at least once first! 😄';
+    m.style.animation='none'; void m.offsetWidth;
+    m.style.animation='funIn .4s var(--ease-spring)';
+    return;
+  }
+  document.getElementById('stMain').style.display   = 'none';
+  document.getElementById('stResult').style.display = 'flex';
+  document.getElementById('srNum').textContent = taps;
+
+  let emoji, msg;
+  if(taps<10)       { emoji='😌'; msg='You were already pretty chill! Even a tiny release helps. 😎'; }
+  else if(taps<30)  { emoji='😄'; msg='Nice release! You tapped your worries away. Feeling lighter? 🌟'; }
+  else if(taps<80)  { emoji='🎉'; msg='WOW — you really needed that! Amazing release. You rock! 💪'; }
+  else if(taps<160) { emoji='🔥'; msg='INCREDIBLE! You absolutely demolished your stress. Super light now! ⚡'; }
+  else              { emoji='👑'; msg='YOU ARE A CERTIFIED LEGEND. Nothing can stress you now. CONQUERED. 🏆'; }
+
+  document.getElementById('srEmoji').textContent = emoji;
+  document.getElementById('srMsg').textContent   = msg;
+}
+
+function resetStress() { initStress(); }
+
+/* ─── SKINCARE ──────────────────────────────────── */
+const skState = { skinType:'', probs:[], water:'', sleep:'' };
+
+function pickChip(el, single) {
+  const grp = el.dataset.group;
+  if(single) {
+    document.querySelectorAll(`.chip[data-group="${grp}"]`).forEach(c=>c.classList.remove('on'));
+    el.classList.add('on');
+    skState[grp] = el.dataset.val;
+  } else {
+    el.classList.toggle('on');
+    skState.probs = Array.from(document.querySelectorAll('.chip[data-group="probs"].on')).map(c=>c.dataset.val);
+  }
+}
+
+const SK = {
+  morning:{
+    oily:["Wash face with a gentle foaming cleanser — removes extra oil without stripping skin","Apply a light, oil-free moisturiser while skin is still slightly damp","Use SPF 30+ sunscreen — this is non-negotiable every single day!","Blot with tissue if face feels greasy — don't over-wash","Eat a vitamin C fruit (orange, amla) for natural inner glow"],
+    dry:["Use a creamy, non-foaming cleanser — it won't strip your natural oils","Apply a rich, hydrating moisturiser immediately after patting face dry","Layer SPF 30+ sunscreen on top of moisturiser","Spritz a hydrating rose-water mist before applying moisturiser","Drink a full glass of water before stepping outside"],
+    combination:["Use a mild gel or foam cleanser — gentle on cheeks, effective on T-zone","Moisturise dry cheek areas generously, go light on the oily T-zone","Apply a lightweight SPF 30+ sunscreen evenly across the face","Use a gentle toner on oily areas only (forehead, nose, chin)","Avoid touching your face throughout the day"],
+    sensitive:["Use a fragrance-free, soap-free cleanser — look for 'gentle' or 'hypoallergenic'","Pat skin completely dry — never rub, which irritates sensitive skin","Apply a soothing, fragrance-free moisturiser for sensitive skin","Use a mineral SPF (zinc-based) — kinder to reactive skin than chemical SPFs","Test any new product on your inner wrist first before applying to face"],
+    normal:["Wash with a balanced, gentle face wash — keeps skin clean without over-drying","Apply a light daily moisturiser to maintain healthy skin barrier","Use SPF 30+ sunscreen daily — UV damage is the biggest cause of ageing","Keep your routine short and consistent — simplicity is key","Eat a rainbow of fruits and veggies for skin that glows from inside"]
+  },
+  night:{
+    oily:["Cleanse thoroughly at night — oil mixes with pollution and needs removing","Use a salicylic acid cleanser 2-3 nights a week to clear clogged pores","Apply a very light, gel-based moisturiser — skip heavy creams","Let skin breathe fully — avoid thick products overnight","Change your pillowcase every 2-3 days — oil and bacteria transfer to skin"],
+    dry:["Double cleanse: start with a cleansing oil to dissolve sunscreen, then use your cleanser","Apply a thick night cream or sleeping mask — this is your skin's biggest hydration window","Add 2-3 drops of rosehip or almond oil on top for extra nourishment","Keep a glass of water bedside to sip if you wake up dry","Use a humidifier in your room to add moisture to the air overnight"],
+    combination:["Remove sunscreen and any makeup thoroughly — use micellar water if needed","Apply a light moisturiser on dry cheek areas only","Use a spot treatment on any active breakout areas on your T-zone","Sleep on a clean cotton pillowcase — synthetic fabric can trap heat and oil","Try a hydrating sheet mask once a week for balanced-skin bliss"],
+    sensitive:["Cleanse very gently with cool water — hot water inflames sensitive skin","Apply a calming cream with aloe vera, ceramides or oat extract","Avoid any exfoliants at night unless your skin is used to it (1x per week max)","Use an unscented pillow mist or just wash pillowcase frequently","Do NOT introduce more than one new product per week — easier to spot reactions"],
+    normal:["Cleanse every night — even if you didn't wear makeup, pollution settles on skin","Apply a nourishing night cream or light serum","Rotate a vitamin C or niacinamide serum 3 nights a week for preventive care","Get 7-8 hours of sleep — this is truly your best skincare treatment","Keep your bedroom slightly cool — better sleep means better skin recovery"]
+  },
+  natural:{
+    acne:["Spot-treat pimples with diluted tea tree oil (1 drop tea tree + 4 drops water) using a cotton bud","Make a turmeric + honey mask: mix ¼ tsp turmeric with 1 tsp honey, apply for 10 mins, 2x/week","Dab pure aloe vera gel on breakouts before bed every night for soothing relief","NEVER pop pimples — it spreads bacteria and causes permanent dark spots","Wash face towels and pillowcases at least twice a week"],
+    dull:["Honey + lemon glow mask: mix 1 tsp honey with 3 drops lemon juice, apply 5 min (never more — lemon can irritate)","Gentle sugar scrub: mix 1 tsp sugar with ½ tsp coconut oil, massage gently in circles, rinse — 1x/week only","Eat antioxidant-rich foods daily: oranges, guava, berries, amla, and leafy greens","Drink water consistently throughout the day — dull skin is often dehydrated skin","Get at least 10 minutes of morning sunlight daily for natural Vitamin D"],
+    tan:["Potato juice treatment: grate raw potato, squeeze juice, apply to tanned areas daily for 15 mins then rinse","Tomato + yogurt mask: mix 1 tsp tomato juice + 1 tbsp yogurt, apply 10-15 mins, rinse with cool water","Cucumber slices: place chilled slices on tanned areas for 20 mins — cooling and lightening","Wear SPF 30+ sunscreen EVERY time you go outside — prevention is far better than treatment","Gently exfoliate tanned arms and legs once a week with a sugar + lemon scrub"],
+    darkspots:["Lemon spot treatment: dab lemon juice on spots only, leave max 5 minutes, rinse — do this 3-4x/week","Aloe vera night serum: apply pure aloe vera gel to dark spots every night before sleeping","Turmeric paste: mix ½ tsp turmeric + 1 tsp milk/rose water into a paste, apply 15 mins, 3x/week","Wear sunscreen daily without fail — UV exposure darkens existing spots significantly","Patience is key — natural remedies show results in 4-8 weeks of consistent use"],
+    pores:["Multani mitti (Fuller's earth) mask: mix with rose water into a paste, apply on oily areas, leave till semi-dry, rinse — 2x/week","Egg white mask: whisk one egg white, apply thin layer, leave 15 mins, rinse with cool water — tightens pores instantly","Always rinse your face with cold water as the final step — it helps contract pores","Keep your hands away from your face — touching transfers bacteria and enlarges pores over time","Never sleep with sunscreen or makeup on — clogged pores stretch over time"],
+    dryness:["Honey mask: apply pure raw honey to face for 15 mins — it's a natural humectant that draws moisture into skin","Yogurt + honey mask: 1 tbsp yogurt + 1 tsp honey, apply 10 mins — lactic acid gently removes dry flakes","Warm almond oil massage: massage 3-4 drops into face using upward circular motions before bed","Avoid very hot water on face — it strips natural oils. Always use cool or lukewarm water","Increase healthy fats in your diet: nuts, avocado, olive oil — dry skin often reflects diet"],
+    none:["Use rose water as a gentle, alcohol-free toner twice daily — balances skin pH beautifully","Apply aloe vera gel as a lightweight night moisturiser — nourishes without clogging pores","Gentle exfoliation once a week with oatmeal + honey keeps fresh skin cells on the surface","Stay hydrated inside out: water, herbal teas, coconut water, and hydrating fruits like watermelon","Protect your skin every single day with SPF — prevention is the most powerful skincare of all"]
+  },
+  lip:{
+    good:["Apply pure honey or desi ghee on lips every night before sleeping — natural deep moisturiser","Use a lip balm with SPF during the day — lips can sunburn too!","Gentle lip scrub: mix 1 tsp sugar + ½ tsp coconut oil, scrub softly in circles, rinse — 2x/week","Drink at least 8 glasses of water daily — lip plumpness starts with hydration","Remove lipstick or tinted balm before sleeping — never sleep with colour products on lips"],
+    okay:["Apply a thick layer of coconut oil or desi ghee on lips nightly to restore moisture","Avoid licking your lips — saliva evaporates quickly and leaves lips drier than before","Use a healing lip balm with shea butter or beeswax during the day","Try to increase water intake by one extra glass per day — your lips will thank you","Gentle sugar + honey lip scrub once a week to remove dead flaky lip skin"],
+    poor:["Apply a thick layer of petroleum jelly or coconut oil every night — this is urgent lip repair!","STOP licking or biting lips — the habit dramatically worsens dryness and cracking","Carry a hydrating lip balm with you everywhere and apply throughout the day","Drink water as the first thing you do every morning — dehydration shows first on lips","Even 30 more minutes of sleep per night makes a visible difference to lip texture within a week"]
+  }
+};
+
+function randPick(arr, n) {
+  const copy = [...arr];
+  const res  = [];
+  for(let i=0; i<Math.min(n,copy.length); i++) {
+    const idx = Math.floor(Math.random()*copy.length);
+    res.push(copy.splice(idx,1)[0]);
+  }
+  return res;
+}
+
+function buildRoutine() {
+  if(!skState.skinType) { alert('Please select your skin type first! 😊'); return; }
+
+  const t  = skState.skinType;
+  const morning = randPick(SK.morning[t]||SK.morning.normal, 4);
+  const night   = randPick(SK.night[t]||SK.night.normal,     4);
+
+  const validProbs = skState.probs.filter(p=>p!=='none' && SK.natural[p]);
+  const prob = validProbs.length ? validProbs[Math.floor(Math.random()*validProbs.length)] : 'none';
+  const natural = randPick(SK.natural[prob]||SK.natural.none, 4);
+
+  const lip = randPick(SK.lip[skState.sleep||'good']||SK.lip.good, 4);
+
+  if(skState.water==='low')  morning.push('💧 Priority tip: Drink at least 8 glasses of water daily — it transforms your skin from inside!');
+  if(skState.sleep==='poor') night.push('😴 Reminder: Even 30 more minutes of sleep per night visibly improves skin within a week!');
+
+  document.getElementById('skForm').style.display = 'none';
+
+  const R = document.getElementById('skResults');
+  R.style.display = 'flex';
+
+  const buildItems = (arr, cls, numCls) =>
+    arr.map((s,i)=>`<li><span class="step-num ${numCls}">${i+1}</span><span>${s}</span></li>`).join('');
+
+  R.innerHTML = `
+    <div style="text-align:center;margin-bottom:4px;">
+      <div style="font-family:'Syne',sans-serif;font-size:1.55rem;font-weight:900;color:var(--sk-accent)">Your Personal Routine ✨</div>
+      <div style="font-size:.85rem;color:var(--sk-muted);margin-top:5px;">Crafted for <strong>${t}</strong> skin 🌸</div>
+    </div>
+
+    <div class="rout-card">
+      <div class="rout-head">
+        <div class="rout-ico ico-morning">☀️</div>
+        <div><div class="rout-title">Morning Routine</div><div class="rout-sub">Do these steps every morning after waking up</div></div>
+      </div>
+      <ul>${buildItems(morning,'morning','sn-morning')}</ul>
+    </div>
+
+    <div class="rout-card">
+      <div class="rout-head">
+        <div class="rout-ico ico-night">🌙</div>
+        <div><div class="rout-title">Night Routine</div><div class="rout-sub">Before bed — this is when your skin heals!</div></div>
+      </div>
+      <ul>${buildItems(night,'night','sn-night')}</ul>
+    </div>
+
+    <div class="rout-card">
+      <div class="rout-head">
+        <div class="rout-ico ico-natural">🌿</div>
+        <div><div class="rout-title">Natural Remedies</div><div class="rout-sub">Simple kitchen ingredients that genuinely work</div></div>
+      </div>
+      <ul>${buildItems(natural,'natural','sn-natural')}</ul>
+    </div>
+
+    <div class="rout-card">
+      <div class="rout-head">
+        <div class="rout-ico ico-lip">💋</div>
+        <div><div class="rout-title">Lip Care Routine</div><div class="rout-sub">Keep your lips soft, smooth and healthy</div></div>
+      </div>
+      <ul>${buildItems(lip,'lip','sn-lip')}</ul>
+    </div>
+  `;
+
+  document.getElementById('skResetBtn').style.display = 'block';
+  document.getElementById('skBotBtn').style.display   = 'block';
+  setTimeout(()=> R.scrollIntoView({behavior:'smooth', block:'start'}), 120);
+}
+
+function resetSkin() {
+  skState.skinType=''; skState.probs=[]; skState.water=''; skState.sleep='';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('skForm').style.display    = 'flex';
+  document.getElementById('skResults').style.display = 'none';
+  document.getElementById('skResetBtn').style.display= 'none';
+  document.getElementById('skBotBtn').style.display  = 'none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ─── INIT ──────────────────────────────────────── */
+// Pre-init stress so it's ready
+initStress();
+</script>
+</body>
+</html>
